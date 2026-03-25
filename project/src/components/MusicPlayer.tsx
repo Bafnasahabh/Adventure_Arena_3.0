@@ -6,7 +6,7 @@ const TRACK_PATH = encodeURI(
 );
 
 export const MusicPlayer = () => {
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -14,11 +14,19 @@ export const MusicPlayer = () => {
     audio.loop = true;
     audio.preload = 'auto';
     audio.volume = 0.5;
-    audio.muted = true;
+    audio.muted = false;
     audioRef.current = audio;
 
+    const startOnInteraction = () => {
+      audio.play().catch(() => {});
+      document.removeEventListener('click', startOnInteraction);
+      document.removeEventListener('touchstart', startOnInteraction);
+    };
+
     audio.play().catch(() => {
-      // Autoplay can be blocked unless user interacts.
+      // Autoplay blocked. Wait for first user interaction (any click/touch anywhere).
+      document.addEventListener('click', startOnInteraction);
+      document.addEventListener('touchstart', startOnInteraction);
     });
 
     const onVisibilityChange = () => {
@@ -32,6 +40,8 @@ export const MusicPlayer = () => {
 
     return () => {
       document.removeEventListener('visibilitychange', onVisibilityChange);
+      document.removeEventListener('click', startOnInteraction);
+      document.removeEventListener('touchstart', startOnInteraction);
       audio.pause();
       audio.src = '';
       audioRef.current = null;
@@ -58,8 +68,8 @@ export const MusicPlayer = () => {
     <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2 pointer-events-none">
       
       {isMuted && (
-         <div className="bg-amber-900/90 text-amber-200 text-[10px] uppercase tracking-wider font-bold px-3 py-1 text-center rounded-full animate-pulse border border-amber-700 shadow-xl pointer-events-none">
-           Click to Unmute Background Audio
+         <div className="bg-amber-900/90 text-amber-200 text-[10px] uppercase tracking-wider font-bold px-3 py-1 text-center rounded-full border border-amber-700 shadow-xl pointer-events-none">
+           Code of Conduct: Music is Muted
          </div>
       )}
       

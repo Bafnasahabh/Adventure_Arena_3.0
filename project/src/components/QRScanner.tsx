@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { Camera, X, RefreshCcw } from 'lucide-react';
+import { Camera, X } from 'lucide-react';
 
 interface QRScannerProps {
   onScan: (data: string) => void;
@@ -10,7 +10,7 @@ interface QRScannerProps {
 export const QRScanner = ({ onScan, onClose }: QRScannerProps) => {
 
   const [error, setError] = useState('');
-  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const facingMode = 'environment';
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isStoppedRef = useRef(false);
 
@@ -82,9 +82,6 @@ export const QRScanner = ({ onScan, onClose }: QRScannerProps) => {
     }
   };
 
-  const toggleCamera = () => {
-    setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'));
-  };
 
   const handleClose = async () => {
     isStoppedRef.current = true;
@@ -127,13 +124,6 @@ export const QRScanner = ({ onScan, onClose }: QRScannerProps) => {
                 <p className="text-amber-200 text-sm mb-4 sm:mb-0">
                   Point your spyglass (camera) at a QR code
                 </p>
-                <button
-                  onClick={toggleCamera}
-                  className="flex items-center gap-2 px-4 py-2 bg-stone-800 border-2 border-amber-700 text-amber-300 hover:bg-stone-700 rounded-lg transition-colors"
-                >
-                  <RefreshCcw className="w-4 h-4" />
-                  Flip Camera
-                </button>
               </div>
             </>
           )}
