@@ -1,6 +1,4 @@
-// Default to same-origin. This is important for "single URL" hosting
-// (backend serves the built frontend, so `/api/*` is on the same domain).
-const API_URL = import.meta.env.VITE_API_URL ?? '';
+const API_URL = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL ?? '');
 
 export const api = {
   get: async (endpoint: string) => {
