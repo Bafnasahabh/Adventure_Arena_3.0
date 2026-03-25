@@ -185,7 +185,7 @@ const __dirname = path.dirname(__filename);
 const distDir = path.resolve(__dirname, '..', 'dist');
 if (fs.existsSync(distDir)) {
   app.use(express.static(distDir));
-  app.get('*', (_req, res) => {
+  app.get(/(.*)/, (_req, res) => {
     res.sendFile(path.join(distDir, 'index.html'));
   });
 }
