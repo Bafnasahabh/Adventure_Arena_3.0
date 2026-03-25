@@ -25,6 +25,14 @@ export const QRScanner = ({ onScan, onClose }: QRScannerProps) => {
 
   const startScanner = async () => {
     try {
+      if (!window.isSecureContext) {
+        // Mobile browsers often require HTTPS/secure context to allow camera access.
+        setError(
+          'Camera access requires HTTPS. Please open the site using an HTTPS URL (e.g., ngrok) or enable permission in browser settings.'
+        );
+        return;
+      }
+
       // Clean up previous instance if exists
       if (scannerRef.current) {
         if (scannerRef.current.isScanning) {
@@ -55,8 +63,9 @@ export const QRScanner = ({ onScan, onClose }: QRScannerProps) => {
       );
 
     } catch (err) {
-      setError('Failed to start camera. Please check permissions.');
-      console.error(err);
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg ? `Failed to start camera: ${msg}` : 'Failed to start camera. Please check permissions.');
+      console.error('Camera start error:', err);
     }
   };
 

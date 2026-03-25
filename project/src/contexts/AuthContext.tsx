@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const parsedSession = JSON.parse(session);
         setUser(parsedSession.user);
-        
+
         if (parsedSession.user.id === 'admin') {
           setIsAdmin(true);
           setLoading(false);
@@ -71,23 +71,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signIn = async (teamId: string, accessCode: string) => {
     try {
       const data = await api.post('/api/auth/login', { teamId, accessCode });
-      
+
       const newUser = { id: teamId, role: 'team' };
       setUser(newUser);
       setTeam(data);
-      
+
       localStorage.setItem('adventure_arena_session', JSON.stringify({ user: newUser }));
 
       return { success: true };
     } catch (error) {
-      return { success: false, error: 'Invalid team ID or access code' };
+      // api.post() throws Error(await res.text()), so message often is JSON.
+      const msg = error instanceof Error ? error.message : String(error);
+      try {
+        const parsed = JSON.parse(msg);
+        if (parsed?.error) return { success: false, error: parsed.error };
+      } catch {
+        // ignore JSON parse errors
+      }
+
+      if (msg.toLowerCase().includes('failed to fetch')) {
+        return { success: false, error: 'Cannot reach backend API. Check VITE_API_URL.' };
+      }
+
+      return { success: false, error: msg || 'Invalid team ID or access code' };
     }
   };
 
   const signInAdmin = async (email: string, password: string) => {
     try {
-      if (email === 'admin@example.com' && password === 'admin') {
-        const newUser = { id: 'admin', email: 'admin@example.com', role: 'admin' };
+      if (email === 'Bafnasahabh@admin.com' && password === 'Bafna1305') {
+        const newUser = { id: 'admin', email: 'Bafnasahabh@admin.com', role: 'admin' };
         setUser(newUser);
         setIsAdmin(true);
         localStorage.setItem('adventure_arena_session', JSON.stringify({ user: newUser }));

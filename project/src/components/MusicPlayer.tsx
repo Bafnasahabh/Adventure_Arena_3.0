@@ -1,85 +1,57 @@
 import { useState, useEffect, useRef } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 
-declare global {
-  interface Window {
-    onYouTubeIframeAPIReady: any;
-    YT: any;
-  }
-}
+const TRACK_PATH = encodeURI(
+  '/Pirates of the Caribbean Music & Ambience _ Main Themes and Pirate Ship Ambience [91E_lYSUmg8].mp3'
+);
 
 export const MusicPlayer = () => {
   const [isMuted, setIsMuted] = useState(true);
-  const playerRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    const initPlayer = () => {
-      // Create the player only if the container exists
-      if (!document.getElementById('youtube-audio-player')) return;
-      
-      playerRef.current = new window.YT.Player('youtube-audio-player', {
-        height: '2',
-        width: '2',
-        videoId: '91E_lYSUmg8',
-        playerVars: {
-          autoplay: 1,
-          loop: 1,
-          playlist: '91E_lYSUmg8', // Required to loop a single video
-          controls: 0,
-          showinfo: 0,
-          autohide: 1,
-          modestbranding: 1,
-          playsinline: 1
-        },
-        events: {
-          onReady: (event: any) => {
-            // Browsers allow autoplay ONLY if it is muted first.
-            event.target.mute();
-            event.target.playVideo();
-          }
-        }
-      });
-    };
+    const audio = new Audio(TRACK_PATH);
+    audio.loop = true;
+    audio.preload = 'auto';
+    audio.volume = 0.5;
+    audio.muted = true;
+    audioRef.current = audio;
 
-    if (window.YT && window.YT.Player) {
-      initPlayer();
-    } else {
-      // Load YouTube API script
-      if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
-        const tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        const firstScriptTag = document.getElementsByTagName('script')[0];
-        if (firstScriptTag && firstScriptTag.parentNode) {
-          firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-        }
+    audio.play().catch(() => {
+      // Autoplay can be blocked unless user interacts.
+    });
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        audio.play().catch(() => {
+          // Ignore browser autoplay restrictions
+        });
       }
-      
-      // Setup callback
-      const prevCallback = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => {
-        if (prevCallback) prevCallback();
-        initPlayer();
-      };
-    }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
-      if (playerRef.current && playerRef.current.destroy) {
-        playerRef.current.destroy();
-      }
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      audio.pause();
+      audio.src = '';
+      audioRef.current = null;
     };
   }, []);
 
-  const toggleMute = () => {
-    if (!playerRef.current || !playerRef.current.unMute) return;
-    
-    if (isMuted) {
-      playerRef.current.unMute();
-      playerRef.current.setVolume(50);
-      playerRef.current.playVideo();
-    } else {
-      playerRef.current.mute();
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    audio.muted = isMuted;
+    if (!isMuted) {
+      audio.play().catch(() => {
+        // User can click again if blocked.
+      });
     }
-    setIsMuted(!isMuted);
+  }, [isMuted]);
+
+  const toggleMute = () => {
+    setIsMuted((prev) => !prev);
   };
 
   return (
@@ -101,11 +73,6 @@ export const MusicPlayer = () => {
       >
         {isMuted ? <VolumeX className="w-7 h-7" /> : <Volume2 className="w-7 h-7" />}
       </button>
-
-      {/* Completely hidden iframe container to play audio out of sight */}
-      <div className="absolute top-[-9999px] left-[-9999px] w-[2px] h-[2px] opacity-0 pointer-events-none">
-        <div id="youtube-audio-player"></div>
-      </div>
     </div>
   );
 };

@@ -1,6 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import pool from './db';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -75,8 +78,11 @@ app.get('/api/game/data/:teamId', async (req, res) => {
 
     let progress = progressRows[0];
     if (!progress) {
-      // Create initial progress if it doesn't exist
-      await pool.query('INSERT IGNORE INTO team_progress (team_id, current_clue_number, is_completed, start_time, total_penalty_minutes) VALUES (?, 1, false, NOW(), 0)', [teamId]);
+      // Create initial progress in "not started" state.
+      await pool.query(
+        'INSERT IGNORE INTO team_progress (team_id, current_clue_number, is_completed, start_time, total_penalty_minutes) VALUES (?, 1, false, NULL, 0)',
+        [teamId]
+      );
       const [newP]: any = await pool.query('SELECT * FROM team_progress WHERE team_id = ?', [teamId]);
       progress = newP[0];
     }
@@ -93,37 +99,56 @@ app.get('/api/game/data/:teamId', async (req, res) => {
 });
 
 app.post('/api/game/scan', async (req, res) => {
-  const { teamId, qrData, currentClueNumber } = req.body;
+  const { teamId, qrData } = req.body;
   try {
+    // Always read progress from DB to prevent client tampering/mismatches.
+    const [progressRows]: any = await pool.query('SELECT start_time, current_clue_number FROM team_progress WHERE team_id = ?', [teamId]);
+    if (!progressRows[0]) {
+      await pool.query(
+        'INSERT IGNORE INTO team_progress (team_id, current_clue_number, is_completed, start_time, total_penalty_minutes) VALUES (?, 1, false, NULL, 0)',
+        [teamId]
+      );
+    }
+
+    const [dbProgressRows]: any = await pool.query('SELECT start_time, current_clue_number FROM team_progress WHERE team_id = ?', [teamId]);
+    const dbProgress = dbProgressRows[0];
+    const hasStarted = !!dbProgress?.start_time && !String(dbProgress.start_time).startsWith('0000-00-00');
+    const currentClueNumber = dbProgress?.current_clue_number ?? 1;
+
     const [qrRows]: any = await pool.query('SELECT * FROM qr_codes WHERE qr_data = ?', [qrData]);
     const qrCode = qrRows[0];
 
     if (!qrCode) {
-      await pool.query('INSERT IGNORE INTO scan_logs (team_id, qr_data, was_correct, error_type) VALUES (?, ?, false, "invalid_qr")', [teamId, qrData]);
+      await pool.query('INSERT INTO scan_logs (team_id, qr_data, was_correct, error_type) VALUES (?, ?, false, "invalid_qr")', [teamId, qrData]);
       return res.status(400).json({ error: 'Invalid QR code.' });
     }
 
     if (qrCode.team_id !== teamId) {
-      await pool.query('INSERT IGNORE INTO scan_logs (team_id, qr_data, was_correct, error_type) VALUES (?, ?, false, "wrong_team")', [teamId, qrData]);
+      await pool.query('INSERT INTO scan_logs (team_id, qr_data, was_correct, error_type) VALUES (?, ?, false, "wrong_team")', [teamId, qrData]);
       return res.status(400).json({ error: 'This QR code belongs to another team.' });
     }
 
     if (qrCode.sequence_number === 0) {
-      if (currentClueNumber === 1) {
+      if (!hasStarted && currentClueNumber === 1) {
         await pool.query('UPDATE team_progress SET start_time = NOW() WHERE team_id = ?', [teamId]);
-        await pool.query('INSERT IGNORE INTO scan_logs (team_id, qr_data, was_correct) VALUES (?, ?, true)', [teamId, qrData]);
+        await pool.query('INSERT INTO scan_logs (team_id, qr_data, was_correct) VALUES (?, ?, true)', [teamId, qrData]);
         return res.json({ success: true, message: 'Hunt started!' });
       }
       return res.status(400).json({ error: 'Already started.' });
     }
 
+    // Block clue scans until the starting QR is scanned correctly.
+    if (!hasStarted) {
+      return res.status(400).json({ error: 'Please scan your starting QR code first.' });
+    }
+
     if (qrCode.sequence_number !== currentClueNumber) {
-      await pool.query('INSERT IGNORE INTO scan_logs (team_id, qr_data, was_correct, error_type) VALUES (?, ?, false, "wrong_sequence")', [teamId, qrData]);
+      await pool.query('INSERT INTO scan_logs (team_id, qr_data, was_correct, error_type) VALUES (?, ?, false, "wrong_sequence")', [teamId, qrData]);
       return res.status(400).json({ error: 'Wrong clue sequence.' });
     }
 
     // Correct clue!
-    await pool.query('INSERT IGNORE INTO scan_logs (team_id, qr_data, was_correct) VALUES (?, ?, true)', [teamId, qrData]);
+    await pool.query('INSERT INTO scan_logs (team_id, qr_data, was_correct) VALUES (?, ?, true)', [teamId, qrData]);
 
     // Check if it's the last clue
     const [clueCountRows]: any = await pool.query('SELECT COUNT(*) as count FROM clues WHERE team_id = ?', [teamId]);
@@ -145,13 +170,25 @@ app.post('/api/game/scan', async (req, res) => {
 app.post('/api/game/hint', async (req, res) => {
   const { teamId, clueNumber, penaltyMinutes } = req.body;
   try {
-    await pool.query('INSERT IGNORE INTO hint_usage (team_id, clue_number, penalty_minutes) VALUES (?, ?, ?)', [teamId, clueNumber, penaltyMinutes]);
+    await pool.query('INSERT INTO hint_usage (team_id, clue_number, penalty_minutes) VALUES (?, ?, ?)', [teamId, clueNumber, penaltyMinutes]);
     await pool.query('UPDATE team_progress SET total_penalty_minutes = total_penalty_minutes + ? WHERE team_id = ?', [penaltyMinutes, teamId]);
     res.json({ success: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
+
+// In production, serve the Vite frontend build from `../dist`.
+// Note: this must be added AFTER all API routes so `/api/*` doesn't get captured.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const distDir = path.resolve(__dirname, '..', 'dist');
+if (fs.existsSync(distDir)) {
+  app.use(express.static(distDir));
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(distDir, 'index.html'));
+  });
+}
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);

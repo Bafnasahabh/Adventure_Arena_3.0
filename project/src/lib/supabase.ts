@@ -1,4 +1,6 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Default to same-origin. This is important for "single URL" hosting
+// (backend serves the built frontend, so `/api/*` is on the same domain).
+const API_URL = import.meta.env.VITE_API_URL ?? '';
 
 export const api = {
   get: async (endpoint: string) => {
@@ -38,6 +40,7 @@ export type TeamProgress = {
   id: string;
   team_id: string;
   current_clue_number: number;
+  is_completed: boolean;
   start_time: string | null;
   end_time: string | null;
   total_penalty_minutes: number;
