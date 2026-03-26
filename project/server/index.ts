@@ -67,10 +67,12 @@ app.post('/api/admin/reset/:teamId', async (req, res) => {
       await pool.query('DELETE FROM team_progress');
       await pool.query('DELETE FROM hint_usage');
       await pool.query('DELETE FROM scan_logs');
+      await pool.query('UPDATE teams SET team_name = NULL');
     } else {
       await pool.query('DELETE FROM team_progress WHERE team_id = ?', [teamId]);
       await pool.query('DELETE FROM hint_usage WHERE team_id = ?', [teamId]);
       await pool.query('DELETE FROM scan_logs WHERE team_id = ?', [teamId]);
+      await pool.query('UPDATE teams SET team_name = NULL WHERE team_id = ?', [teamId]);
     }
     res.json({ success: true });
   } catch (err: any) {
