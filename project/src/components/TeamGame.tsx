@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { api, Clue, TeamProgress } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { QRScanner } from './QRScanner';
-import { Clock, MapPin, Camera, HelpCircle, LogOut, Scroll, Loader } from 'lucide-react';
+import { Clock, MapPin, Camera, HelpCircle, LogOut, Scroll, Loader, PartyPopper } from 'lucide-react';
+import { Confetti } from './Confetti';
 
 export const TeamGame = () => {
   const { user, team, signOut } = useAuth();
@@ -139,15 +140,37 @@ export const TeamGame = () => {
 
   if (progress?.is_completed) {
     return (
-      <div className="min-h-screen bg-stone-900 bg-[url('/assets/bg.png')] bg-cover bg-center bg-fixed flex items-center justify-center p-4 relative">
-        <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-[2px]"></div>
-        <div className="max-w-md w-full bg-stone-900/90 backdrop-blur-md rounded-lg border-2 border-amber-700 p-8 text-center relative z-10 shadow-2xl">
-          <img src="/assets/chest.png" alt="Treasure Chest" className="w-48 h-48 drop-shadow-[0_0_20px_rgba(251,191,36,0.6)] mx-auto mb-4 animate-bounce" />
-          <h1 className="text-4xl font-bold text-amber-300 mb-4 font-serif">Treasure Secured!</h1>
-          <p className="text-amber-200 text-lg mb-4">
-            Congratulations, you have found the final treasure!
+      <div className="min-h-screen bg-stone-900 bg-[url('/assets/bg.png')] bg-cover bg-center bg-fixed flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-[3px]"></div>
+        <Confetti />
+        
+        <div className="max-w-md w-full bg-stone-900/80 backdrop-blur-xl rounded-2xl border-2 border-amber-500 p-8 text-center relative z-10 shadow-[0_0_50px_rgba(251,191,36,0.2)] transform transition-all duration-1000 scale-100 animate-[fadeIn_0.5s_ease-out]">
+          
+          <div className="relative inline-block mb-10 w-full">
+            <div className="absolute inset-0 bg-amber-400/40 blur-3xl rounded-full scale-150 animate-[pulse_3s_ease-in-out_infinite]"></div>
+            <div className="absolute inset-x-0 h-40 bg-gradient-to-t from-amber-500/30 to-transparent -bottom-10 blur-xl"></div>
+            
+            <img src="/assets/chest.png" alt="Treasure Chest" className="w-56 h-56 drop-shadow-[0_0_40px_rgba(251,191,36,1)] mx-auto relative z-10 animate-[bounce_2s_infinite] cursor-pointer hover:scale-110 transition-transform duration-300" />
+            
+            {/* Glowing rings */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-4 border-amber-300/40 rounded-full animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-2 border-amber-100/20 rounded-full animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite_0.5s]"></div>
+          </div>
+
+          <div className="flex justify-center items-center gap-3 mb-4">
+            <PartyPopper className="w-8 h-8 text-amber-400 animate-[spin_4s_linear_infinite]" />
+            <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200 font-serif drop-shadow-sm uppercase tracking-widest">
+              Secured!
+            </h1>
+            <PartyPopper className="w-8 h-8 text-amber-400 animate-[spin_4s_linear_infinite_reverse]" />
+          </div>
+
+          <p className="text-amber-100/90 text-lg mb-8 font-medium italic">
+            Congratulations Captain, you have unearthed the final treasure of the Seven Seas!
           </p>
-          <div className="bg-amber-900/50 rounded-lg p-4 mb-6 border border-amber-700/50">
+
+          <div className="bg-gradient-to-b from-amber-900/60 to-black/60 rounded-xl p-5 mb-8 border border-amber-500/40 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-amber-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <p className="text-amber-300 text-sm mb-2 font-bold uppercase tracking-wider">Final Completion Time</p>
             <p className="text-3xl font-bold text-amber-100">
               {formatTime(
