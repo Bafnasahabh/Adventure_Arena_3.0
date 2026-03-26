@@ -38,6 +38,17 @@ app.get('/api/teams/:id', async (req, res) => {
   }
 });
 
+app.post('/api/teams/:id/name', async (req, res) => {
+  const { id } = req.params;
+  const { teamName } = req.body;
+  try {
+    await pool.query('UPDATE teams SET team_name = ? WHERE team_id = ?', [teamName, id]);
+    res.json({ success: true, teamName });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- ADMIN ---
 app.get('/api/admin/dashboard', async (req, res) => {
   try {

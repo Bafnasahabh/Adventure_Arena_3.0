@@ -14,6 +14,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (teamId: string, accessCode: string) => Promise<{ success: boolean; error?: string }>;
   signInAdmin: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  updateTeamName: (name: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
 }
 
@@ -112,6 +113,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updateTeamName = async (teamName: string) => {
+    if (!user) return { success: false, error: 'Not logged in' };
+    try {
+      await api.post(`/api/teams/${user.id}/name`, { teamName });
+      if (team) {
+        setTeam({ ...team, team_name: teamName });
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: 'Failed to update team name' };
+    }
+  };
+
   const signOut = async () => {
     localStorage.removeItem('adventure_arena_session');
     setUser(null);
@@ -120,7 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, team, isAdmin, loading, signIn, signInAdmin, signOut }}>
+    <AuthContext.Provider value={{ user, team, isAdmin, loading, signIn, signInAdmin, updateTeamName, signOut }}>
       {children}
     </AuthContext.Provider>
   );

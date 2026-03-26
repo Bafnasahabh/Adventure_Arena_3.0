@@ -6,9 +6,11 @@ import { Clock, MapPin, Camera, HelpCircle, LogOut, Scroll, Loader, PartyPopper 
 import { Confetti } from './Confetti';
 
 export const TeamGame = () => {
-  const { user, team, signOut } = useAuth();
+  const { user, team, signOut, updateTeamName } = useAuth();
   const [progress, setProgress] = useState<TeamProgress | null>(null);
   const [currentClue, setCurrentClue] = useState<Clue | null>(null);
+  const [teamNameInput, setTeamNameInput] = useState('');
+  const [isUpdatingName, setIsUpdatingName] = useState(false);
   const [pastClues, setPastClues] = useState<Clue[]>([]);
   const [hintRevealed, setHintRevealed] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
@@ -134,6 +136,52 @@ export const TeamGame = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-900 via-stone-800 to-slate-900 flex items-center justify-center">
         <Loader className="w-12 h-12 text-amber-400 animate-spin" />
+      </div>
+    );
+  }
+
+  if (team && !team.team_name) {
+    return (
+      <div className="min-h-screen bg-stone-900 bg-[url('/assets/bg.png')] bg-cover bg-center bg-fixed justify-center p-4 relative flex items-center text-center">
+        <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-[2px]"></div>
+        <div className="max-w-md w-full bg-stone-900/90 backdrop-blur-md rounded-lg border-2 border-amber-700 p-8 relative z-10 shadow-2xl">
+          <img src="/assets/ship.png" alt="Pirate Ship" className="w-24 h-24 mx-auto mb-4 drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]" />
+          <h1 className="text-3xl font-bold text-amber-300 mb-4 font-serif">
+            Welcome Aboard!
+          </h1>
+          <p className="text-amber-200 mb-6 text-lg">
+            Before we set sail, what be the name of your crew?
+          </p>
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            if (!teamNameInput.trim()) return;
+            setIsUpdatingName(true);
+            await updateTeamName(teamNameInput.trim());
+            setIsUpdatingName(false);
+          }} className="space-y-4">
+            <input
+              type="text"
+              value={teamNameInput}
+              onChange={(e) => setTeamNameInput(e.target.value)}
+              placeholder="e.g. Team Shardul"
+              className="w-full px-4 py-3 bg-stone-800 border-2 border-amber-700/50 rounded-lg text-white placeholder-stone-500 focus:outline-none focus:border-amber-500 transition-colors text-center font-bold"
+              required
+            />
+            <button
+              type="submit"
+              disabled={isUpdatingName || !teamNameInput.trim()}
+              className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-amber-600 to-amber-700 text-white font-bold rounded-lg hover:from-amber-700 hover:to-amber-800 transition-all transform hover:scale-[1.02] shadow-lg disabled:opacity-50 disabled:transform-none"
+            >
+              {isUpdatingName ? 'Registering...' : 'Register Crew Name'}
+            </button>
+          </form>
+          <button
+            onClick={signOut}
+            className="w-full mt-4 px-6 py-2 text-stone-400 hover:text-stone-200 transition-colors"
+          >
+            Logout
+          </button>
+        </div>
       </div>
     );
   }
