@@ -15,6 +15,7 @@ export const TeamGame = () => {
   const [hintRevealed, setHintRevealed] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [memeData, setMemeData] = useState<{ url: string; isVideo: boolean; message: string } | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -76,6 +77,18 @@ export const TeamGame = () => {
     if (!team || !progress) return;
     setShowScanner(false);
 
+    if (qrData.startsWith('meme_qr_')) {
+      const match = qrData.match(/meme_qr_(\d+)/);
+      if (match) {
+        let index = parseInt(match[1], 10);
+        if (index > 9) index = ((index - 1) % 9) + 1; // Map 10+ safely to 1-9
+        const isVideo = [5, 8, 9].includes(index);
+        const url = `/memes/meme_${index}.${isVideo ? 'mp4' : 'jpg'}`;
+        setMemeData({ url, isVideo, message: "You found a secret meme! 🏴‍☠️" });
+        return;
+      }
+    }
+
     try {
       const res = await api.post('/api/game/scan', {
         teamId: team.team_id,
@@ -107,7 +120,12 @@ export const TeamGame = () => {
     if (hintRevealed) return;
 
     try {
-      const penaltyMinutes = 5;
+      // Calculate incremental penalty: 1st=4, 2nd=5, 3rd=6...
+      // We fetch all hints used by the team to determine the count.
+      const data = await api.get(`/api/game/data/${team.team_id}`);
+      const hintsUsed = data.hints.length;
+      const penaltyMinutes = 4 + hintsUsed;
+
       await api.post('/api/game/hint', {
         teamId: team.team_id,
         clueNumber: progress.current_clue_number,
@@ -285,6 +303,27 @@ export const TeamGame = () => {
             onClose={() => setShowScanner(false)}
           />
         )}
+
+        {memeData && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div className="bg-stone-900 border-2 border-amber-500 rounded-xl p-6 max-w-lg w-full text-center shadow-[0_0_30px_rgba(251,191,36,0.3)] relative transform transition-all scale-100">
+              <h2 className="text-2xl font-black text-amber-300 mb-4 font-serif uppercase tracking-widest">{memeData.message}</h2>
+              <div className="mb-6 rounded-lg overflow-hidden border border-amber-900 bg-black flex justify-center items-center">
+                {memeData.isVideo ? (
+                  <video src={memeData.url} controls autoPlay className="w-full h-auto max-h-[60vh] object-contain" />
+                ) : (
+                  <img src={memeData.url} alt="Secret Meme" className="max-w-full h-auto max-h-[60vh] object-contain" />
+                )}
+              </div>
+              <button
+                onClick={() => setMemeData(null)}
+                className="px-8 py-3 bg-gradient-to-r from-amber-600 to-amber-700 text-white font-bold rounded-lg hover:from-amber-700 hover:to-amber-800 transition-all shadow-lg w-full cursor-pointer"
+              >
+                Continue Hunt
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -369,9 +408,6 @@ export const TeamGame = () => {
                  <div key={c.id} className="bg-black/30 p-3 rounded-md border border-amber-900/30">
                    <p className="text-amber-500 text-xs font-bold mb-1">Mark {c.sequence_number}</p>
                    <p className="text-amber-100 text-sm italic">"{c.clue_text}"</p>
-                   <p className="text-amber-400/60 text-xs mt-1 flex items-center justify-between">
-                      <span>Found at: {c.location_description}</span>
-                   </p>
                  </div>
                ))}
              </div>
@@ -409,6 +445,27 @@ export const TeamGame = () => {
           onScan={handleQRScan}
           onClose={() => setShowScanner(false)}
         />
+      )}
+
+      {memeData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-stone-900 border-2 border-amber-500 rounded-xl p-6 max-w-lg w-full text-center shadow-[0_0_30px_rgba(251,191,36,0.3)] relative transform transition-all scale-100">
+            <h2 className="text-2xl font-black text-amber-300 mb-4 font-serif uppercase tracking-widest">{memeData.message}</h2>
+            <div className="mb-6 rounded-lg overflow-hidden border border-amber-900 bg-black flex justify-center items-center">
+              {memeData.isVideo ? (
+                <video src={memeData.url} controls autoPlay className="w-full h-auto max-h-[60vh] object-contain" />
+              ) : (
+                <img src={memeData.url} alt="Secret Meme" className="max-w-full h-auto max-h-[60vh] object-contain" />
+              )}
+            </div>
+            <button
+              onClick={() => setMemeData(null)}
+              className="px-8 py-3 bg-gradient-to-r from-amber-600 to-amber-700 text-white font-bold rounded-lg hover:from-amber-700 hover:to-amber-800 transition-all shadow-lg w-full cursor-pointer"
+            >
+              Continue Hunt
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -1,0 +1,54 @@
+[
+  {
+    "team_id": "Team1",
+    "clues": [
+      {
+        "sequence_number": 1,
+        "clue_text": "Look carefully! Where the captain keeps his beverages, seek the spot beneath your thumb.",
+        "hint_text": "Think about where drinks or cups are kept.",
+        "location_description": "Beverage Station"
+      },
+      {
+        "sequence_number": 2,
+        "clue_text": "Follow the sea breeze! To the place where the crew gathers to exchange tales.",
+        "hint_text": "Look for a common gathering area or lounge.",
+        "location_description": "Common Lounge"
+      },
+      {
+        "sequence_number": 3,
+        "clue_text": "X marks the spot! Where the ship's logs are safely stored away from the ocean spray.",
+        "hint_text": "A bookshelf or a cabinet where documents are kept.",
+        "location_description": "Library/Bookshelf"
+      },
+      {
+        "sequence_number": 4,
+        "clue_text": "Beware the sirens! Seek the shiny reflection that looks back at you.",
+        "hint_text": "A mirror in the hallway or restroom.",
+        "location_description": "Mirror Area"
+      },
+      {
+        "sequence_number": 5,
+        "clue_text": "Almost there! To the crow's nest, where you can see the whole deck.",
+        "hint_text": "The highest point in the room or a balcony.",
+        "location_description": "Balcony or Upper Level"
+      },
+      {
+        "sequence_number": 6,
+        "clue_text": "The final treasure awaits! Where the captain rests his head after a long voyage.",
+        "hint_text": "Look in the main office or the most comfortable chair.",
+        "location_description": "Captain's Desk"
+      }
+    ]
+  },
+  {
+    "team_id": "Team2",
+    "clues": [
+      {
+        "sequence_number": 1,
+        "clue_text": "Look carefully! (Team 2 Clue 1)",
+        "hint_text": "Think about where drinks or cups are kept.",
+        "location_description": "Beverage Station"
+      }
+    ]
+  }
+]
