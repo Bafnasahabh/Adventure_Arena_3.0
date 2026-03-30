@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { api, Clue, TeamProgress } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { QRScanner } from './QRScanner';
-import { Clock, MapPin, Camera, HelpCircle, LogOut, Scroll, Loader, PartyPopper } from 'lucide-react';
+import { Clock, MapPin, Camera, LogOut, Scroll, Loader, PartyPopper } from 'lucide-react';
 import { Confetti } from './Confetti';
 
 export const TeamGame = () => {
@@ -12,7 +12,6 @@ export const TeamGame = () => {
   const [teamNameInput, setTeamNameInput] = useState('');
   const [isUpdatingName, setIsUpdatingName] = useState(false);
   const [pastClues, setPastClues] = useState<Clue[]>([]);
-  const [hintRevealed, setHintRevealed] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [memeData, setMemeData] = useState<{ url: string; isVideo: boolean; message: string } | null>(null);
@@ -63,9 +62,6 @@ export const TeamGame = () => {
         setCurrentClue(null);
       }
       
-      const hasHint = data.hints.some((h: any) => h.clue_number === currentClueNum);
-      setHintRevealed(hasHint);
-      
     } catch (err) {
       console.error(err);
     } finally {
@@ -85,7 +81,7 @@ export const TeamGame = () => {
         if (index > 9) index = ((index - 1) % 9) + 1; // Map 10+ safely to 1-9
         const isVideo = [5, 8, 9].includes(index);
         const url = `/memes/meme_${index}.${isVideo ? 'mp4' : 'jpg'}`;
-        setMemeData({ url, isVideo, message: "You found a secret meme! 🏴‍☠️" });
+        setMemeData({ url, isVideo, message: "Pirates, you have been pranked. 🏴‍☠️" });
         return;
       }
     }
@@ -116,36 +112,7 @@ export const TeamGame = () => {
     }
   };
 
-  const useHint = async () => {
-    if (!team || !progress || !currentClue) return;
-    if (hintRevealed) return;
-    
-    // Optimistic UI to prevent double click
-    setHintRevealed(true);
-
-    try {
-      // Calculate incremental penalty: 1st=4, 2nd=5, 3rd=6...
-      // We fetch all hints used by the team to determine the count.
-      const data = await api.get(`/api/game/data/${team.team_id}`);
-      const hintsUsed = data.hints.length;
-      const penaltyMinutes = 4 + hintsUsed;
-
-      await api.post('/api/game/hint', {
-        teamId: team.team_id,
-        clueNumber: progress.current_clue_number,
-        penaltyMinutes
-      });
-
-      setMessage({
-        type: 'info',
-        text: `Hint revealed! ${penaltyMinutes} minute penalty added to your total time.`,
-      });
-
-      loadProgress();
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  // Hints are now managed physically and logged by admins. The in-app hint button is removed.
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -390,13 +357,6 @@ export const TeamGame = () => {
             <p className="text-amber-100 text-lg leading-relaxed mb-4 font-serif italic text-center">
               "{currentClue.clue_text}"
             </p>
-            
-            {hintRevealed ? (
-              <div className="mt-4 p-4 bg-amber-900/40 border border-amber-500/50 rounded-lg">
-                <p className="text-amber-300 text-sm font-bold mb-1 flex items-center gap-2"><HelpCircle className="w-4 h-4"/> Revealed Hint:</p>
-                <p className="text-amber-100 text-md">{currentClue.hint_text}</p>
-              </div>
-            ) : null}
           </div>
         )}
 
@@ -418,29 +378,14 @@ export const TeamGame = () => {
            </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="flex justify-center mb-8">
             <button
             onClick={() => setShowScanner(true)}
-            className="flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-amber-600 to-amber-700 text-white font-bold rounded-lg hover:from-amber-700 hover:to-amber-800 transition-all transform hover:scale-[1.02] shadow-lg"
+            className="w-full max-w-sm flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-amber-600 to-amber-700 text-white font-bold rounded-lg hover:from-amber-700 hover:to-amber-800 transition-all transform hover:scale-[1.02] shadow-lg"
           >
             <Camera className="w-6 h-6" />
             Scan QR Code
           </button>
-
-          {!hintRevealed ? (
-             <button
-              onClick={useHint}
-              className="flex items-center justify-center gap-2 px-6 py-4 bg-stone-800 border-2 border-amber-700 text-amber-300 font-bold rounded-lg hover:bg-stone-700 transition-all transform hover:scale-[1.02] shadow-lg"
-             >
-               <HelpCircle className="w-6 h-6" />
-               Reveal Hint
-             </button>
-          ) : (
-            <div className="flex items-center justify-center gap-2 px-6 py-4 bg-stone-800/50 text-stone-500 font-bold rounded-lg border border-stone-700 cursor-not-allowed">
-              <HelpCircle className="w-6 h-6" />
-              Hint Revealed
-            </div>
-          )}
         </div>
       </div>
 

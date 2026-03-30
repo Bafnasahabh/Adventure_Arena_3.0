@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, Team, TeamProgress } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Trophy, RefreshCw, LogOut, Download, Users, MapPin, Loader } from 'lucide-react';
+import { Trophy, RefreshCw, LogOut, Download, Users, MapPin, Loader, HelpCircle } from 'lucide-react';
 
 type LeaderboardEntry = {
   team_id: string;
@@ -108,6 +108,28 @@ export const AdminDashboard = () => {
       loadData();
     } catch (error) {
       console.error('Error resetting all teams', error);
+    }
+  };
+
+  const addHintPenalty = async (teamId: string, currentClueNumber: number) => {
+    if (!confirm(`Are you sure you want to log a hint penalty for ${teamId}?`)) return;
+
+    try {
+      const data = await api.get(`/api/game/data/${teamId}`);
+      const hintsUsed = data.hints.length;
+      const penaltyMinutes = 4 + hintsUsed;
+
+      await api.post('/api/game/hint', {
+        teamId: teamId,
+        clueNumber: currentClueNumber,
+        penaltyMinutes
+      });
+
+      alert(`Added ${penaltyMinutes} min penalty to ${teamId}.`);
+      loadData();
+    } catch (error) {
+      console.error('Error adding hint penalty', error);
+      alert('Failed to add hint penalty.');
     }
   };
 
@@ -296,12 +318,20 @@ export const AdminDashboard = () => {
                           ? `+${entry.total_penalty_minutes} min`
                           : '-'}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 flex gap-2">
                         <button
                           onClick={() => resetTeam(entry.team_id)}
                           className="px-3 py-1 bg-red-600/90 text-white text-sm rounded hover:bg-red-700 transition-colors shadow"
                         >
                           Reset Team
+                        </button>
+                        <button
+                          onClick={() => addHintPenalty(entry.team_id, entry.current_clue_number)}
+                          disabled={entry.is_completed || !entry.start_time}
+                          className="px-3 py-1 bg-amber-600/90 text-white text-sm rounded hover:bg-amber-700 transition-colors shadow flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <HelpCircle className="w-4 h-4" />
+                          Hint Used
                         </button>
                       </td>
                     </tr>
