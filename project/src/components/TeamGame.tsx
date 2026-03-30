@@ -77,8 +77,9 @@ export const TeamGame = () => {
     if (!team || !progress) return;
     setShowScanner(false);
 
-    if (qrData.startsWith('meme_qr_')) {
-      const match = qrData.match(/meme_qr_(\d+)/);
+    const safeQrData = qrData.trim().toLowerCase();
+    if (safeQrData.startsWith('meme_qr_')) {
+      const match = safeQrData.match(/meme_qr_(\d+)/);
       if (match) {
         let index = parseInt(match[1], 10);
         if (index > 9) index = ((index - 1) % 9) + 1; // Map 10+ safely to 1-9
@@ -92,7 +93,7 @@ export const TeamGame = () => {
     try {
       const res = await api.post('/api/game/scan', {
         teamId: team.team_id,
-        qrData,
+        qrData: qrData.trim(),
         currentClueNumber: progress.current_clue_number
       });
       
@@ -118,6 +119,9 @@ export const TeamGame = () => {
   const useHint = async () => {
     if (!team || !progress || !currentClue) return;
     if (hintRevealed) return;
+    
+    // Optimistic UI to prevent double click
+    setHintRevealed(true);
 
     try {
       // Calculate incremental penalty: 1st=4, 2nd=5, 3rd=6...
