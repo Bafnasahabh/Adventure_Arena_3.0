@@ -354,8 +354,8 @@ export const TeamGame = () => {
               <MapPin className="w-6 h-6 text-amber-400" />
               <h3 className="text-2xl font-bold text-amber-300">Captain's Clue</h3>
             </div>
-            <p className="text-amber-100 text-lg leading-relaxed mb-4 font-serif italic text-center">
-              "{currentClue.clue_text}"
+            <p className="text-amber-100 text-lg leading-relaxed mb-4 font-serif italic text-center whitespace-pre-wrap">
+              "{currentClue.clue_text.replace(/\\n/g, '\n')}"
             </p>
           </div>
         )}
@@ -371,7 +371,7 @@ export const TeamGame = () => {
                {pastClues.map((c) => (
                  <div key={c.id} className="bg-black/30 p-3 rounded-md border border-amber-900/30">
                    <p className="text-amber-500 text-xs font-bold mb-1">Mark {c.sequence_number}</p>
-                   <p className="text-amber-100 text-sm italic">"{c.clue_text}"</p>
+                   <p className="text-amber-100 text-sm italic whitespace-pre-wrap">"{c.clue_text.replace(/\\n/g, '\n')}"</p>
                  </div>
                ))}
              </div>
